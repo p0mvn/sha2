@@ -11,8 +11,13 @@ const BLOCK_SIZE_BITS: u16 = 512;
 
 type Word = [u8; WORD_SIZE_BITS as usize / 8];
 
-// SHA-256 Constants
+use std::slice;
 
+// SHA-256 Constants
+// sequence of sixty-four constant 32-bit words, These words represent
+// the first thirty-two bits of the fractional parts of the cube roots
+//  of the first sixty-four prime numbers. They surve as the "nothing up
+// my sleeve values" for the choice of IV.
 fn constants_256() -> [u32; 64] {
     [
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -84,7 +89,10 @@ fn SigmaOne() {
 // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
 // iterative, one-way hash function that can process a message to produce a
 // condensed representation called a message digest
-fn sha2() -> String {
+fn sha2(data: &[u8]) -> String {
+
+    // Copy value for convenience
+    let mut dataVec = vec![data];
 
     // preprocessing
        // * padding the message
@@ -97,8 +105,32 @@ fn sha2() -> String {
     return String::from("");
 }
 
+// Custom Helpers
+///////////////////////////////////////////////////////////////////////////////
+
+// pad pads the message to be a multiple of  BLOCK_SIZE_BITS.
+fn pad(mut data: Vec<u8>) {
+    // Suppose the length of the message M, is l bits. Append the bit "1" to
+    // the end of the message, followed by k zero bits, where k is the smallest,
+    // non-negative solution to the equation l + 1 + k === 448 mod 512. Then,
+    // append the 64-bit block that is equal to the number l expressed using a
+    // binary representation. For example, the (8-bit ASCII) message "abc" has
+    // length 8 x 3 = 24, so the message is padded with a one bit, then
+    // 448 - (24+1) = 423 zero bits, and then the message length, to become the
+    // 512-bit padded message.
+    //
+    //                                   423        64
+    // 01100001  01100010  01100011  1  00..00  00..011000
+    //    "a"       "b"        "c"                  l = 24
+    // The length of the padded message should now be a multiple of 512 bits.
+
+
+
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
 
     use sha2::{Sha256, Digest};
     use hex_literal::hex;
@@ -106,13 +138,18 @@ mod tests {
     #[test]
     fn sha2_256_works() {
         let mut hasher = Sha256::new();
+
+        let data = b"hello world";
+
         // write input message
-        hasher.update(b"hello world");
+        hasher.update(data);
         // read hash digest and consume hasher
         let result = hasher.finalize();
 
         assert_eq!(result[..], hex!("
         b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9
     ")[..]);
+
+        sha2(data);
     }
 }
